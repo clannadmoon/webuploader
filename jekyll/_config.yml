@@ -4,7 +4,7 @@ redcarpet:
   extensions:
     - with_toc_data
     - html_toc
-highlighter: true
+pygments: true
 baseurl: /webuploader
 exclude:
   - node_modules

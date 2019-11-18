@@ -146,7 +146,7 @@
             formData: {
                 uid: 123
             },
-            dnd: '#uploader .queueList',
+            dnd: '#dndArea',
             paste: '#uploader',
             swf: '../../dist/Uploader.swf',
             chunked: false,

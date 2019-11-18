@@ -1,4 +1,4 @@
-/*! WebUploader 0.1.8-alpha */
+/*! WebUploader 0.1.6 */
 
 
 /**
@@ -244,7 +244,7 @@
             /**
              * @property {String} version 当前版本号。
              */
-            version: '0.1.8-alpha',
+            version: '0.1.6',
     
             /**
              * @property {jQuery|Zepto} $ 引用依赖的jQuery或者Zepto对象。
@@ -850,7 +850,7 @@
                     invalidNum: stats.numOfInvalid,
                     uploadFailNum: stats.numOfUploadFailed,
                     queueNum: stats.numOfQueue,
-                    interruptNum: stats.numOfInterrupt
+                    interruptNum: stats.numofInterrupt
                 } : {};
             },
     
@@ -913,7 +913,6 @@
     
         return Uploader;
     });
-    
     /**
      * @fileOverview Runtime管理器，负责Runtime的选择, 连接
      */
@@ -1236,8 +1235,7 @@
             }
     
             this.ext = ext;
-            this.lastModifiedDate = file.lastModifiedDate || 
-                    file.lastModified && new Date(file.lastModified).toLocaleString() ||
+            this.lastModifiedDate = file.lastModifiedDate ||
                     (new Date()).toLocaleString();
     
             Blob.apply( this, arguments );
@@ -1339,15 +1337,12 @@
             refresh: function() {
                 var shimContainer = this.getRuntime().getContainer(),
                     button = this.options.button,
-                    /*
                     width = button.outerWidth ?
                             button.outerWidth() : button.width(),
     
                     height = button.outerHeight ?
                             button.outerHeight() : button.height(),
-                    */
-                    width = button[0] && button[0].offsetWidth || button.outerWidth() || button.width(),
-                    height = button[0] && button[0].offsetHeight || button.outerHeight() || button.height(),
+    
                     pos = button.offset();
     
                 width && height && shimContainer.css({
@@ -1652,7 +1647,7 @@
             pick: null,
     
             /**
-             * @property {Array} [accept=null]
+             * @property {Arroy} [accept=null]
              * @namespace options
              * @for Uploader
              * @description 指定接受哪些类型的文件。 由于目前还有ext转mimeType表，所以这里需要分开指定。
@@ -1693,13 +1688,13 @@
             },
     
             /**
-             * @method addButton
+             * @method addBtn
              * @for Uploader
-             * @grammar addButton( pick ) => Promise
+             * @grammar addBtn( pick ) => Promise
              * @description
              * 添加文件选择按钮，如果一个按钮不够，需要调用此方法来添加。参数跟[options.pick](#WebUploader:Uploader:options)一致。
              * @example
-             * uploader.addButton({
+             * uploader.addBtn({
              *     id: '#btnContainer',
              *     innerHTML: '选择文件'
              * });
@@ -2389,8 +2384,7 @@
              * * `numOfProgress` 正在上传中的文件数
              * * `numOfUploadFailed` 上传错误的文件数。
              * * `numOfInvalid` 无效的文件数。
-             * * `numOfDeleted` 被移除的文件数。
-             * * `numOfInterrupt` 被中断的文件数。
+             * * `numofDeleted` 被移除的文件数。
              * @property {Object} stats
              */
             this.stats = {
@@ -2400,8 +2394,8 @@
                 numOfProgress: 0,
                 numOfUploadFailed: 0,
                 numOfInvalid: 0,
-                numOfDeleted: 0,
-                numOfInterrupt: 0
+                numofDeleted: 0,
+                numofInterrupt: 0
             };
     
             // 上传队列，仅包括等待上传的文件
@@ -2525,13 +2519,11 @@
     
                 if ( existing ) {
                     delete this._map[ file.id ];
-                    this._delFile(file);
                     file.destroy();
-                    this.stats.numOfDeleted++;
-                    
+                    this.stats.numofDeleted++;
                 }
             },
-    		
+    
             _fileAdded: function( file ) {
                 var me = this,
                     existing = this._map[ file.id ];
@@ -2542,15 +2534,6 @@
                     file.on( 'statuschange', function( cur, pre ) {
                         me._onFileStatusChange( cur, pre );
                     });
-                }
-            },
-    
-            _delFile : function(file){
-                for(var i = this._queue.length - 1 ; i >= 0 ; i-- ){
-                    if(this._queue[i] == file){
-                        this._queue.splice(i,1); 
-                        break;
-                    }
                 }
             },
     
@@ -2575,7 +2558,7 @@
                         break;
     
                     case STATUS.INTERRUPT:
-                        stats.numOfInterrupt--;
+                        stats.numofInterrupt--;
                         break;
                 }
     
@@ -2606,7 +2589,7 @@
                         break;
     
                     case STATUS.INTERRUPT:
-                        stats.numOfInterrupt++;
+                        stats.numofInterrupt++;
                         break;
                 }
             }
@@ -2617,7 +2600,6 @@
     
         return Queue;
     });
-    
     /**
      * @fileOverview 队列
      */
@@ -2718,7 +2700,7 @@
             /**
              * @event beforeFileQueued
              * @param {File} file File对象
-             * @description 当文件被加入队列之前触发。如果此事件handler的返回值为`false`，则此文件不会被添加进入队列。
+             * @description 当文件被加入队列之前触发，此事件的handler返回值为`false`，则此文件不会被添加进入队列。
              * @for  Uploader
              */
     
@@ -2944,7 +2926,7 @@
          * @property {Object} [runtimeOrder=html5,flash]
          * @namespace options
          * @for Uploader
-         * @description 指定运行时启动顺序。默认会先尝试 html5 是否支持，如果支持则使用 html5, 否则使用 flash.
+         * @description 指定运行时启动顺序。默认会想尝试 html5 是否支持，如果支持则使用 html5, 否则则使用 flash.
          *
          * 可以将此值设置成 `flash`，来强制使用 flash 运行时。
          */
@@ -3080,10 +3062,6 @@
                 this.disconnectRuntime();
             },
     
-            getResponseHeaders: function() {
-                return this.exec('getResponseHeaders');
-            },
-    
             getResponse: function() {
                 return this.exec('getResponse');
             },
@@ -3118,7 +3096,6 @@
     
         return Transport;
     });
-    
     /**
      * @fileOverview 负责文件上传相关。
      */
@@ -3143,7 +3120,7 @@
              * @namespace options
              * @for Uploader
              * @description 是否允许在文件传输时提前把下一个文件准备好。
-             * 某些文件的准备工作比较耗时，比如图片压缩，md5序列化。
+             * 对于一个文件的准备工作比较耗时，比如图片压缩，md5序列化。
              * 如果能提前在当前文件传输期处理，可以节省总体耗时。
              */
             prepareNextFile: false,
@@ -3173,14 +3150,6 @@
             chunkRetry: 2,
     
             /**
-             * @property {Number} [chunkRetryDelay=1000]
-             * @namespace options
-             * @for Uploader
-             * @description 开启重试后，设置重试延时时间, 单位毫秒。默认1000毫秒，即1秒.
-             */
-            chunkRetryDelay: 1000,
-    
-            /**
              * @property {Boolean} [threads=3]
              * @namespace options
              * @for Uploader
@@ -3202,13 +3171,6 @@
              * @namespace options
              * @for Uploader
              * @description 设置文件上传域的name。
-             */
-    
-             /**
-             * @property {Object} [method=POST]
-             * @namespace options
-             * @for Uploader
-             * @description 文件上传方式，`POST` 或者 `GET`。
              */
     
             /**
@@ -3375,7 +3337,6 @@
                 }
     
                 if ( me.runing ) {
-                    me.owner.trigger('startUpload', file);// 开始上传或暂停恢复的，trigger event
                     return Base.nextTick( me.__tick );
                 }
     
@@ -3389,13 +3350,7 @@
                     if ( file.getStatus() === Status.INTERRUPT ) {
                         me._trigged = false;
                         files.push(file);
-    
-                        if (v.waiting) {
-                            return;
-                        }
-                        
-                        // 文件 prepare 完后，如果暂停了，这个时候只会把文件插入 pool, 而不会创建 tranport，
-                        v.transport ? v.transport.send() : me._doSend(v);
+                        v.transport && v.transport.send();
                     }
                 });
     
@@ -3430,7 +3385,8 @@
              * @for  Uploader
              */
             stopUpload: function( file, interrupt ) {
-                var me = this;
+                var me = this,
+                    block;
     
                 if (file === true) {
                     interrupt = file;
@@ -3455,18 +3411,19 @@
     
                     $.each( me.pool, function( _, v ) {
     
-                        // 只 abort 指定的文件，每一个分片。
+                        // 只 abort 指定的文件。
                         if (v.file === file) {
-                            v.transport && v.transport.abort();
-    
-                            if (interrupt) {
-                                me._putback(v);
-                                me._popBlock(v);
-                            }
+                            block = v;
+                            return false;
                         }
                     });
     
-                    me.owner.trigger('stopUpload', file);// 暂停，trigger event
+                    block.transport && block.transport.abort();
+    
+                    if (interrupt) {
+                        me._putback(block);
+                        me._popBlock(block);
+                    }
     
                     return Base.nextTick( me.__tick );
                 }
@@ -3518,7 +3475,7 @@
             },
     
             /**
-             * 判断`Uploader`是否正在上传中。
+             * 判断`Uplaode`r是否正在上传中。
              * @grammar isInProgress() => Boolean
              * @method isInProgress
              * @for  Uploader
@@ -3532,7 +3489,7 @@
             },
     
             /**
-             * 跳过一个文件上传，直接标记指定文件为已上传状态。
+             * 掉过一个文件上传，直接标记指定文件为已上传状态。
              * @grammar skipFile( file ) => undefined
              * @method skipFile
              * @for  Uploader
@@ -3588,7 +3545,7 @@
     
                 // 没有要上传的了，且没有正在传输的了。
                 } else if ( !me.remaning && !me._getStats().numOfQueue &&
-                    !me._getStats().numOfInterrupt ) {
+                    !me._getStats().numofInterrupt ) {
                     me.runing = false;
     
                     me._trigged || Base.nextTick(function() {
@@ -3605,9 +3562,6 @@
                 idx = this.stack.indexOf(block.cuted);
     
                 if (!~idx) {
-                    // 如果不在里面，说明移除过，需要把计数还原回去。
-                    this.remaning++;
-                    block.file.remaning++;
                     this.stack.unshift(block.cuted);
                 }
             },
@@ -3763,23 +3717,19 @@
                         file.source.slice( block.start, block.end );
     
                 // hook, 每个分片发送之前可能要做些异步的事情。
-                block.waiting = promise = me.request( 'before-send', block, function() {
-                    delete block.waiting;
+                promise = me.request( 'before-send', block, function() {
     
                     // 有可能文件已经上传出错了，所以不需要再传输了。
                     if ( file.getStatus() === Status.PROGRESS ) {
                         me._doSend( block );
-                    } else if (block.file.getStatus() !== Status.INTERRUPT) {
-                        me._popBlock(block);
+                    } else {
+                        me._popBlock( block );
+                        Base.nextTick( me.__tick );
                     }
-    
-                    Base.nextTick(me.__tick);
                 });
     
                 // 如果为fail了，则跳过此分片。
                 promise.fail(function() {
-                    delete block.waiting;
-    
                     if ( file.remaning === 1 ) {
                         me._finishFile( file ).always(function() {
                             block.percentage = 1;
@@ -3850,7 +3800,7 @@
             _doSend: function( block ) {
                 var me = this,
                     owner = me.owner,
-                    opts = $.extend({}, me.options, block.options),
+                    opts = me.options,
                     file = block.file,
                     tr = new Transport( opts ),
                     data = $.extend({}, opts.formData ),
@@ -3877,8 +3827,6 @@
     
                     ret = tr.getResponseAsJson() || {};
                     ret._raw = tr.getResponse();
-                    ret._headers = tr.getResponseHeaders();
-                    block.response = ret;
                     fn = function( value ) {
                         reject = value;
                     };
@@ -3893,24 +3841,14 @@
     
                 // 尝试重试，然后广播文件上传出错。
                 tr.on( 'error', function( type, flag ) {
-                    // 在 runtime/html5/transport.js 上为 type 加上了状态码，形式：type|status|text（如：http-403-Forbidden）
-                    // 这里把状态码解释出来，并还原后面代码所依赖的 type 变量
-                    var typeArr = type.split( '|' ), status, statusText;  
-                    type = typeArr[0];
-                    status = parseFloat( typeArr[1] ),
-                    statusText = typeArr[2];
-    
                     block.retried = block.retried || 0;
     
                     // 自动重试
-                    if ( block.chunks > 1 && ~'http,abort,server'.indexOf( type.replace( /-.*/, '' ) ) &&
+                    if ( block.chunks > 1 && ~'http,abort'.indexOf( type ) &&
                             block.retried < opts.chunkRetry ) {
     
                         block.retried++;
-    
-                        me.retryTimer = setTimeout(function() {
-                            tr.send();
-                        }, opts.chunkRetryDelay || 1000);
+                        tr.send();
     
                     } else {
     
@@ -3920,7 +3858,7 @@
                         }
     
                         file.setStatus( Status.ERROR, type );
-                        owner.trigger( 'uploadError', file, type, status, statusText );
+                        owner.trigger( 'uploadError', file, type );
                         owner.trigger( 'uploadComplete', file );
                     }
                 });
@@ -4005,10 +3943,6 @@
     
                 totalPercent = uploaded / file.size;
                 this.owner.trigger( 'uploadProgress', file, totalPercent || 0 );
-            },
-    
-            destroy: function() {
-                clearTimeout(this.retryTimer);
             }
     
         });
@@ -4086,10 +4020,7 @@
             }
     
             uploader.on( 'beforeFileQueued', function( file ) {
-                    // 增加beforeFileQueuedCheckfileNumLimit验证,主要为了再次加载时(已存在历史文件)验证数量是否超过设置项
-                if (!this.trigger('beforeFileQueuedCheckfileNumLimit', file,count)) {
-                    return false;
-                }
+    
                 if ( count >= max && flag ) {
                     flag = false;
                     this.trigger( 'error', 'Q_EXCEED_NUM_LIMIT', max, file );
@@ -4593,11 +4524,6 @@
                 return this._responseJson;
             },
     
-            getResponseHeaders: function() {
-                // flash 暂不支持
-                return {};
-            },
-    
             abort: function() {
                 var xhr = this._xhr;
     
@@ -4635,9 +4561,9 @@
                         readBody = true;
                     } else if ( status >= 500 && status < 600 ) {
                         readBody = true;
-                        err = 'server-'+status;
+                        err = 'server';
                     } else {
-                        err = 'http-'+status;
+                        err = 'http';
                     }
     
                     if ( readBody ) {
@@ -4672,10 +4598,9 @@
                 });
     
                 xhr.on( 'error', function() {
-                    var status = xhr.exec('getStatus'),err = status?'http-'+status:'http';
                     xhr.off();
                     me._xhr = null;
-                    me.trigger( 'error', err );
+                    me.trigger( 'error', 'http' );
                 });
     
                 me._xhr = xhr;

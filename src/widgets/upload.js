@@ -22,7 +22,7 @@ define([
          * @namespace options
          * @for Uploader
          * @description 是否允许在文件传输时提前把下一个文件准备好。
-         * 某些文件的准备工作比较耗时，比如图片压缩，md5序列化。
+         * 对于一个文件的准备工作比较耗时，比如图片压缩，md5序列化。
          * 如果能提前在当前文件传输期处理，可以节省总体耗时。
          */
         prepareNextFile: false,
@@ -52,14 +52,6 @@ define([
         chunkRetry: 2,
 
         /**
-         * @property {Number} [chunkRetryDelay=1000]
-         * @namespace options
-         * @for Uploader
-         * @description 开启重试后，设置重试延时时间, 单位毫秒。默认1000毫秒，即1秒.
-         */
-        chunkRetryDelay: 1000,
-
-        /**
          * @property {Boolean} [threads=3]
          * @namespace options
          * @for Uploader
@@ -81,13 +73,6 @@ define([
          * @namespace options
          * @for Uploader
          * @description 设置文件上传域的name。
-         */
-
-         /**
-         * @property {Object} [method=POST]
-         * @namespace options
-         * @for Uploader
-         * @description 文件上传方式，`POST` 或者 `GET`。
          */
 
         /**
@@ -254,7 +239,6 @@ define([
             }
 
             if ( me.runing ) {
-                me.owner.trigger('startUpload', file);// 开始上传或暂停恢复的，trigger event
                 return Base.nextTick( me.__tick );
             }
 
@@ -268,13 +252,7 @@ define([
                 if ( file.getStatus() === Status.INTERRUPT ) {
                     me._trigged = false;
                     files.push(file);
-
-                    if (v.waiting) {
-                        return;
-                    }
-                    
-                    // 文件 prepare 完后，如果暂停了，这个时候只会把文件插入 pool, 而不会创建 tranport，
-                    v.transport ? v.transport.send() : me._doSend(v);
+                    v.transport && v.transport.send();
                 }
             });
 
@@ -309,7 +287,8 @@ define([
          * @for  Uploader
          */
         stopUpload: function( file, interrupt ) {
-            var me = this;
+            var me = this,
+                block;
 
             if (file === true) {
                 interrupt = file;
@@ -334,18 +313,19 @@ define([
 
                 $.each( me.pool, function( _, v ) {
 
-                    // 只 abort 指定的文件，每一个分片。
+                    // 只 abort 指定的文件。
                     if (v.file === file) {
-                        v.transport && v.transport.abort();
-
-                        if (interrupt) {
-                            me._putback(v);
-                            me._popBlock(v);
-                        }
+                        block = v;
+                        return false;
                     }
                 });
 
-                me.owner.trigger('stopUpload', file);// 暂停，trigger event
+                block.transport && block.transport.abort();
+
+                if (interrupt) {
+                    me._putback(block);
+                    me._popBlock(block);
+                }
 
                 return Base.nextTick( me.__tick );
             }
@@ -397,7 +377,7 @@ define([
         },
 
         /**
-         * 判断`Uploader`是否正在上传中。
+         * 判断`Uplaode`r是否正在上传中。
          * @grammar isInProgress() => Boolean
          * @method isInProgress
          * @for  Uploader
@@ -411,7 +391,7 @@ define([
         },
 
         /**
-         * 跳过一个文件上传，直接标记指定文件为已上传状态。
+         * 掉过一个文件上传，直接标记指定文件为已上传状态。
          * @grammar skipFile( file ) => undefined
          * @method skipFile
          * @for  Uploader
@@ -467,7 +447,7 @@ define([
 
             // 没有要上传的了，且没有正在传输的了。
             } else if ( !me.remaning && !me._getStats().numOfQueue &&
-                !me._getStats().numOfInterrupt ) {
+                !me._getStats().numofInterrupt ) {
                 me.runing = false;
 
                 me._trigged || Base.nextTick(function() {
@@ -484,9 +464,6 @@ define([
             idx = this.stack.indexOf(block.cuted);
 
             if (!~idx) {
-                // 如果不在里面，说明移除过，需要把计数还原回去。
-                this.remaning++;
-                block.file.remaning++;
                 this.stack.unshift(block.cuted);
             }
         },
@@ -642,23 +619,19 @@ define([
                     file.source.slice( block.start, block.end );
 
             // hook, 每个分片发送之前可能要做些异步的事情。
-            block.waiting = promise = me.request( 'before-send', block, function() {
-                delete block.waiting;
+            promise = me.request( 'before-send', block, function() {
 
                 // 有可能文件已经上传出错了，所以不需要再传输了。
                 if ( file.getStatus() === Status.PROGRESS ) {
                     me._doSend( block );
-                } else if (block.file.getStatus() !== Status.INTERRUPT) {
-                    me._popBlock(block);
+                } else {
+                    me._popBlock( block );
+                    Base.nextTick( me.__tick );
                 }
-
-                Base.nextTick(me.__tick);
             });
 
             // 如果为fail了，则跳过此分片。
             promise.fail(function() {
-                delete block.waiting;
-
                 if ( file.remaning === 1 ) {
                     me._finishFile( file ).always(function() {
                         block.percentage = 1;
@@ -729,7 +702,7 @@ define([
         _doSend: function( block ) {
             var me = this,
                 owner = me.owner,
-                opts = $.extend({}, me.options, block.options),
+                opts = me.options,
                 file = block.file,
                 tr = new Transport( opts ),
                 data = $.extend({}, opts.formData ),
@@ -756,8 +729,6 @@ define([
 
                 ret = tr.getResponseAsJson() || {};
                 ret._raw = tr.getResponse();
-                ret._headers = tr.getResponseHeaders();
-                block.response = ret;
                 fn = function( value ) {
                     reject = value;
                 };
@@ -772,24 +743,14 @@ define([
 
             // 尝试重试，然后广播文件上传出错。
             tr.on( 'error', function( type, flag ) {
-                // 在 runtime/html5/transport.js 上为 type 加上了状态码，形式：type|status|text（如：http-403-Forbidden）
-                // 这里把状态码解释出来，并还原后面代码所依赖的 type 变量
-                var typeArr = type.split( '|' ), status, statusText;  
-                type = typeArr[0];
-                status = parseFloat( typeArr[1] ),
-                statusText = typeArr[2];
-
                 block.retried = block.retried || 0;
 
                 // 自动重试
-                if ( block.chunks > 1 && ~'http,abort,server'.indexOf( type.replace( /-.*/, '' ) ) &&
+                if ( block.chunks > 1 && ~'http,abort'.indexOf( type ) &&
                         block.retried < opts.chunkRetry ) {
 
                     block.retried++;
-
-                    me.retryTimer = setTimeout(function() {
-                        tr.send();
-                    }, opts.chunkRetryDelay || 1000);
+                    tr.send();
 
                 } else {
 
@@ -799,7 +760,7 @@ define([
                     }
 
                     file.setStatus( Status.ERROR, type );
-                    owner.trigger( 'uploadError', file, type, status, statusText );
+                    owner.trigger( 'uploadError', file, type );
                     owner.trigger( 'uploadComplete', file );
                 }
             });
@@ -884,10 +845,6 @@ define([
 
             totalPercent = uploaded / file.size;
             this.owner.trigger( 'uploadProgress', file, totalPercent || 0 );
-        },
-
-        destroy: function() {
-            clearTimeout(this.retryTimer);
         }
 
     });

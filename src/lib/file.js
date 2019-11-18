@@ -26,8 +26,7 @@ define([
         }
 
         this.ext = ext;
-        this.lastModifiedDate = file.lastModifiedDate || 
-                file.lastModified && new Date(file.lastModified).toLocaleString() ||
+        this.lastModifiedDate = file.lastModifiedDate ||
                 (new Date()).toLocaleString();
 
         Blob.apply( this, arguments );
