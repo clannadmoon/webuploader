@@ -5,7 +5,7 @@
   "main": "dist/webuploader.fis.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fex-team/webuploader.git"
+    "url": "https://github.com/clannadmoon/webuploader.git"
   },
   "keywords": [
     "chunk",
@@ -14,8 +14,6 @@
     "flash"
   ],
   "author": "fex-team",
-  "license": "BSD",
-  "gitHead": "7f92712020f66940ead10f73c16a03305b03259f",
   "readmeFilename": "README.md",
   "devDependencies": {
     "grunt": "0.4.1",
